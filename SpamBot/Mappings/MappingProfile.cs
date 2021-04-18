@@ -8,17 +8,9 @@ namespace SpamBotApi.Mappings
     {
         public MappingProfile()
         {
-            CreateMap<Email, GetEmailDto>();
-            CreateMap<CreateEmailDto, Email>();
-            CreateMap<UpdateEmailDto, Email>();
-
             CreateMap<Receiver, GetReceiverDto>();
             CreateMap<CreateReceiverDto, Receiver>();
             CreateMap<UpdateReceiverDto, Receiver>();
-
-            CreateMap<SentEmail, GetSentEmailDto>();
-            CreateMap<CreateSentEmailDto, SentEmail>();
-            CreateMap<UpdateSentEmailDto, SentEmail>();
         }
     }
 }

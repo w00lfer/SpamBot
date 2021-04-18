@@ -13,6 +13,9 @@ using SpamBotApi.Repositories;
 using SpamBotApi.Repositories.Interfaces;
 using SpamBotApi.Services;
 using SpamBotApi.Services.Interfaces;
+using System;
+using System.Net.Http.Headers;
+using System.Text;
 
 namespace SpamBot
 {
@@ -36,11 +39,15 @@ namespace SpamBot
             services.AddAutoMapper(typeof(MappingProfile));
 
             services.AddScoped<IEmailRepository, EmailRepository>();
-            services.AddScoped<ISentEmailRepository, SentEmailRepository>();
             services.AddScoped<IReceiverRepository, ReceiverRepository>();
 
-            services.AddScoped<IEmailService, EmailService>();
-            services.AddScoped<ISentEmailService, SentEmailService>();
+            services.AddHttpClient<IEmailService, EmailService>(opts =>
+            {
+                opts.BaseAddress = new Uri(Configuration.GetValue<string>("MailgunAddress"));
+                var apiKey = Encoding.ASCII.GetBytes($"api:{Configuration.GetValue<string>("MailgunApiKey")}");
+                opts.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(apiKey));
+            });
+
             services.AddScoped<IReceiverService, ReceiverService>();
 
             services.AddControllers();

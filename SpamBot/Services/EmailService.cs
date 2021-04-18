@@ -1,10 +1,12 @@
 ﻿using AutoMapper;
-using Microsoft.EntityFrameworkCore;
-using SpamBotApi.Models;
+using Microsoft.Extensions.Configuration;
 using SpamBotApi.Models.Dtos;
 using SpamBotApi.Repositories.Interfaces;
 using SpamBotApi.Services.Interfaces;
+using System;
 using System.Collections.Generic;
+using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace SpamBotApi.Services
@@ -13,26 +15,61 @@ namespace SpamBotApi.Services
     {
         private readonly IEmailRepository _emailRepository;
         private readonly IMapper _mapper;
+        private readonly HttpClient _httpClient;
+        private readonly IConfiguration _configuration;
 
-        public EmailService(IEmailRepository emailRepository, IMapper mapper)
+        public EmailService(IEmailRepository emailRepository, IMapper mapper, HttpClient httpClient, IConfiguration configuration)
         {
             _emailRepository = emailRepository;
             _mapper = mapper;
+            _httpClient = httpClient;
+            _configuration = configuration;
         }
 
-        public async Task<List<GetEmailDto>> GetAllEmails() =>
-            _mapper.Map<List<GetEmailDto>>(await _emailRepository.GetAllEmails().ToListAsync());
+        public async Task SendEmailAsync(SendEmailDto sendEmailDto)
+        {
+            if (sendEmailDto.SendingDate < DateTime.Now)
+                throw new Exception("You can't send email to paste date time!");
+            
+            
 
-        public async Task<GetEmailDto> GetEmailByIdAsync(int id) =>
-            _mapper.Map<GetEmailDto>(await _emailRepository.GetEmailByIdAsync(id));
+            if (string.IsNullOrEmpty(sendEmailDto.Image))
+            {
+                await SendEmailViaMailgun(sendEmailDto.ReceiverEmail, sendEmailDto.Title, sendEmailDto.Description, sendEmailDto.SendingDate);
+            }
+            else
+            {
+                var imageDataByteArray = Convert.FromBase64String(sendEmailDto.Image);
+                await SendEmailViaMailgun(sendEmailDto.ReceiverEmail, sendEmailDto.Title, sendEmailDto.Description, sendEmailDto.SendingDate, imageDataByteArray);
+            }
+        }
 
-        public async Task CreateEmailAsync(CreateEmailDto email) => 
-            await _emailRepository.CreateEmailAsync(_mapper.Map<Email>(email));
+        private async Task SendEmailViaMailgun(string receiverEmail, string title, string description, DateTime sendingDate, byte[] image = null)
+        {
+            var timeLeftToSend = TimeSpan.FromTicks(sendingDate.Subtract(DateTime.Now).Ticks);
 
-        public Task UpdateEmailAsync(UpdateEmailDto email) =>
-            _emailRepository.UpdateEmailAsync(_mapper.Map<Email>(email));
+            Task.Run(async () =>
+            {
+                await Task.Delay(timeLeftToSend);
+                const string sender = "Excited User";
+                const string senderEmail = "mailgun@testdomain.com";
+                var emailDicitonary = new Dictionary<string, string>
+            {
+                { "from", $"{sender} <{senderEmail}>" },
+                { "to", receiverEmail },
+                { "subject", title },
+                { "text", description },
+            };
 
-        public async Task DeleteEmailAsync(int id) => 
-            await _emailRepository.DeleteEmailAsync(id);
+                if (image != null)
+                    emailDicitonary.Add("inline", image.ToString());
+
+                var formContent = new FormUrlEncodedContent(emailDicitonary);
+
+                var resource = $"{_configuration.GetValue<string>("MailgunResource")}/messages";
+                var result = await _httpClient.PostAsync(resource, formContent);
+            });
+
+        }
     }
 }

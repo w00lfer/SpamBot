@@ -12,6 +12,5 @@ namespace SpamBotApi.Models
 
         public DbSet<Email> Emails { get; set; }
         public DbSet<Receiver> Receivers { get; set; }
-        public DbSet<SentEmail> SentEmails { get; set; }
     }
 }
