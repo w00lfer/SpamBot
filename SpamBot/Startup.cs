@@ -16,6 +16,8 @@ using SpamBotApi.Services.Interfaces;
 using System;
 using System.Net.Http.Headers;
 using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 
 namespace SpamBot
 {
@@ -37,6 +39,7 @@ namespace SpamBot
                 .AddEntityFrameworkStores<AppDbContext>()
                 .AddDefaultTokenProviders();
             services.AddAutoMapper(typeof(MappingProfile));
+            AddAuthWithJwt(services, Configuration);
 
             services.AddScoped<IEmailRepository, EmailRepository>();
             services.AddScoped<IReceiverRepository, ReceiverRepository>();
@@ -47,13 +50,31 @@ namespace SpamBot
                 var apiKey = Encoding.ASCII.GetBytes($"api:{Configuration.GetValue<string>("MailgunApiKey")}");
                 opts.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(apiKey));
             });
-
             services.AddScoped<IReceiverService, ReceiverService>();
+            services.AddScoped<IAuthService, AuthService>();
 
             services.AddControllers();
             services.AddSwaggerGen(c =>
             {
-                c.SwaggerDoc("v1", new OpenApiInfo { Title = "SpamBot", Version = "v1" });
+                c.SwaggerDoc("v1", new OpenApiInfo { Title = "Spammer bot", Version = "v1" });
+                var securitySchema = new OpenApiSecurityScheme
+                {
+                    Description = "JWT Authorization header using the Bearer scheme. Just paste token you got from signin in or signin up",
+                    Name = "Authorization",
+                    In = ParameterLocation.Header,
+                    Type = SecuritySchemeType.Http,
+                    Scheme = "bearer",
+                    Reference = new OpenApiReference
+                    {
+                        Type = ReferenceType.SecurityScheme,
+                        Id = "Bearer"
+                    }
+                };
+                c.AddSecurityDefinition("Bearer", securitySchema);
+
+                var securityRequirement = new OpenApiSecurityRequirement();
+                securityRequirement.Add(securitySchema, new[] { "Bearer" });
+                c.AddSecurityRequirement(securityRequirement);
             });
         }
 
@@ -77,5 +98,29 @@ namespace SpamBot
 
             app.UseEndpoints(endpoints => endpoints.MapControllerRoute("default", "{controller=Home}/{action=Index}/{id?}"));
         }
+
+        private static void AddAuthWithJwt(IServiceCollection services, IConfiguration configuration)
+        {
+            services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+              .AddJwtBearer(options =>
+              {
+                  options.SaveToken = true;
+                  options.RequireHttpsMetadata = false;
+                  options.TokenValidationParameters = new TokenValidationParameters()
+                  {
+                      ValidateIssuer = true,
+                      ValidateAudience = true,
+                      ValidAudience = "http://dotnetdetail.net",
+                      ValidIssuer = "http://dotnetdetail.net",
+                      IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration.GetValue<string>("JwtSecret")))
+                  };
+              });
+        }
     }
 }
+
