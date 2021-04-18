@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 
 namespace SpamBotApi.Controllers
 {
-    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class ReceiverController : ControllerBase
