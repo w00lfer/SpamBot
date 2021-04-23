@@ -1,103 +1,78 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using SpamBotApi.Models.Dtos;
 using SpamBotApi.Repositories.Interfaces;
 using SpamBotApi.Services.Interfaces;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Net.Http;
-using System.Threading;
+using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace SpamBotApi.Services
 {
     public class EmailService : IEmailService
     {
-        private readonly IEmailRepository _emailRepository;
+        private readonly IReceiverRepository _receiverRepository;
         private readonly IMapper _mapper;
         private readonly HttpClient _httpClient;
         private readonly IConfiguration _configuration;
+        private readonly string _userId;
 
-        public EmailService(IEmailRepository emailRepository, IMapper mapper, HttpClient httpClient, IConfiguration configuration)
+        public EmailService(IReceiverRepository receiverRepository, IMapper mapper, HttpClient httpClient, IConfiguration configuration, IHttpContextAccessor httpContextAccessor)
         {
-            _emailRepository = emailRepository;
+            _receiverRepository = receiverRepository;
             _mapper = mapper;
             _httpClient = httpClient;
             _configuration = configuration;
+            _userId = httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.NameIdentifier);
         }
 
         public async Task SendEmailAsync(SendEmailDto sendEmailDto)
         {
-            if (sendEmailDto.SendingDate < DateTime.Now)
-                throw new Exception("You can't send email to paste date time!");
-            
-            
-
-            if (string.IsNullOrEmpty(sendEmailDto.Image))
-            {
-                await SendEmailViaMailgun(sendEmailDto.ReceiverEmail, sendEmailDto.Title, sendEmailDto.Description, sendEmailDto.SendingDate);
-            }
-            else
-            {
-                var imageDataByteArray = Convert.FromBase64String(sendEmailDto.Image);
-                await SendEmailViaMailgun(sendEmailDto.ReceiverEmail, sendEmailDto.Title, sendEmailDto.Description, sendEmailDto.SendingDate, imageDataByteArray);
-            }
-        }
-
-        public async Task SendNonScheduledEmailAsync(SendEmailDto sendEmailDto)
-        {
-            if (sendEmailDto.SendingDate < DateTime.Now)
+            if (sendEmailDto.SendingDate.Subtract(TimeSpan.FromHours(2)) < DateTime.Now)
                 throw new Exception("You can't send email to paste date time!");
 
-            byte[] image = default;
-            if (!string.IsNullOrEmpty(sendEmailDto.Image))
-                image = Convert.FromBase64String(sendEmailDto.Image);
+            var receiver = await _receiverRepository.GetReceiverByIdAsync(sendEmailDto.ReceiverId);
+            if (receiver == null || receiver.CreatorId != _userId)
+                throw new Exception("There is no such user or you don't have access to it");
 
-            const string sender = "Excited User";
-            const string senderEmail = "mailgun@testdomain.com";
-            var emailDicitonary = new Dictionary<string, string>
+            var timeLeftToSend = TimeSpan.FromTicks(sendEmailDto.SendingDate.Subtract(DateTime.Now).Subtract(TimeSpan.FromHours(2)).Ticks);
+
+            byte[] imageByteArray = default;
+            if (sendEmailDto.Image != null)
             {
-                { "from", $"{sender} <{senderEmail}>" },
-                { "to", sendEmailDto.ReceiverEmail },
-                { "subject", sendEmailDto.Title },
-                { "text", sendEmailDto.Description },
-            };
-
-            if (!string.IsNullOrEmpty(sendEmailDto.Image))
-                emailDicitonary.Add("inline", image.ToString());
-
-            var formContent = new FormUrlEncodedContent(emailDicitonary);
-
-            var resource = $"{_configuration.GetValue<string>("MailgunResource")}/messages";
-            var result = await _httpClient.PostAsync(resource, formContent);
-            Console.WriteLine(result.StatusCode);
-        }
-        private async Task SendEmailViaMailgun(string receiverEmail, string title, string description, DateTime sendingDate, byte[] image = null)
-        {
-            var timeLeftToSend = TimeSpan.FromTicks(sendingDate.Subtract(DateTime.Now).Ticks);
+                using (var ms = new MemoryStream())
+                {
+                    await sendEmailDto.Image.CopyToAsync(ms);
+                    imageByteArray = ms.ToArray();
+                }
+            }
 
             Task.Run(async () =>
             {
                 await Task.Delay(timeLeftToSend);
+
                 const string sender = "Excited User";
                 const string senderEmail = "mailgun@testdomain.com";
-                var emailDicitonary = new Dictionary<string, string>
-            {
-                { "from", $"{sender} <{senderEmail}>" },
-                { "to", receiverEmail },
-                { "subject", title },
-                { "text", description },
-            };
 
-                if (image != null)
-                    emailDicitonary.Add("inline", image.ToString());
-
-                var formContent = new FormUrlEncodedContent(emailDicitonary);
+                var content = new MultipartFormDataContent
+                {
+                    { new StringContent($"{sender} <{senderEmail}>"), "from" },
+                    { new StringContent(receiver.Email), "to" },
+                    { new StringContent(sendEmailDto.Title), "subject" },
+                    { new StringContent($"{sendEmailDto.Description}"), "text" }
+                };
 
                 var resource = $"{_configuration.GetValue<string>("MailgunResource")}/messages";
-                var result = await _httpClient.PostAsync(resource, formContent);
+                if (sendEmailDto.Image != null)
+                {
+                    content.Add(new ByteArrayContent(imageByteArray), "inline", sendEmailDto.Image.FileName);
+                }
+                await _httpClient.PostAsync(resource, content);
             });
-
         }
     }
 }
