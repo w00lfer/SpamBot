@@ -22,6 +22,6 @@ namespace SpamBotApi.Controllers
 
         [HttpPost("test/SendNonScheduledEmail")]
         public async Task SendNonScheduledEmail(SendEmailDto email)
-            => await _emailService.SendNonScheduledMailAsync(email);
+            => await _emailService.SendNonScheduledEmailAsync(email);
     }
 }
