@@ -44,6 +44,34 @@ namespace SpamBotApi.Services
             }
         }
 
+        public async Task SendNonScheduledEmailAsync(SendEmailDto sendEmailDto)
+        {
+            if (sendEmailDto.SendingDate < DateTime.Now)
+                throw new Exception("You can't send email to paste date time!");
+
+            byte[] image = default;
+            if (string.IsNullOrEmpty(sendEmailDto.Image))
+                image = Convert.FromBase64String(sendEmailDto.Image);
+
+            const string sender = "Excited User";
+            const string senderEmail = "mailgun@testdomain.com";
+            var emailDicitonary = new Dictionary<string, string>
+            {
+                { "from", $"{sender} <{senderEmail}>" },
+                { "to", sendEmailDto.ReceiverEmail },
+                { "subject", sendEmailDto.Title },
+                { "text", sendEmailDto.Description },
+            };
+
+            if (string.IsNullOrEmpty(sendEmailDto.Image))
+                emailDicitonary.Add("inline", image.ToString());
+
+            var formContent = new FormUrlEncodedContent(emailDicitonary);
+
+            var resource = $"{_configuration.GetValue<string>("MailgunResource")}/messages";
+            var result = await _httpClient.PostAsync(resource, formContent);
+            Console.WriteLine(result.StatusCode);
+        }
         private async Task SendEmailViaMailgun(string receiverEmail, string title, string description, DateTime sendingDate, byte[] image = null)
         {
             var timeLeftToSend = TimeSpan.FromTicks(sendingDate.Subtract(DateTime.Now).Ticks);
