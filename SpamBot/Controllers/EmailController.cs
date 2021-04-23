@@ -17,11 +17,7 @@ namespace SpamBotApi.Controllers
             => _emailService = emailService;
 
         [HttpPost]
-        public async Task SendEmail(SendEmailDto email)
+        public async Task SendEmail([FromForm] SendEmailDto email)
             => await _emailService.SendEmailAsync(email);
-
-        [HttpPost("test/SendNonScheduledEmail")]
-        public async Task SendNonScheduledEmail(SendEmailDto email)
-            => await _emailService.SendNonScheduledEmailAsync(email);
     }
 }

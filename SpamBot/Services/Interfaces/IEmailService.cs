@@ -6,6 +6,5 @@ namespace SpamBotApi.Services.Interfaces
     public interface IEmailService
     {
         Task SendEmailAsync(SendEmailDto sendEmailDto);
-        Task SendNonScheduledEmailAsync(SendEmailDto sendEmailDto);
     }
 }
