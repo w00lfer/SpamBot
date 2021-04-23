@@ -50,7 +50,7 @@ namespace SpamBotApi.Services
                 throw new Exception("You can't send email to paste date time!");
 
             byte[] image = default;
-            if (string.IsNullOrEmpty(sendEmailDto.Image))
+            if (!string.IsNullOrEmpty(sendEmailDto.Image))
                 image = Convert.FromBase64String(sendEmailDto.Image);
 
             const string sender = "Excited User";
@@ -63,7 +63,7 @@ namespace SpamBotApi.Services
                 { "text", sendEmailDto.Description },
             };
 
-            if (string.IsNullOrEmpty(sendEmailDto.Image))
+            if (!string.IsNullOrEmpty(sendEmailDto.Image))
                 emailDicitonary.Add("inline", image.ToString());
 
             var formContent = new FormUrlEncodedContent(emailDicitonary);
