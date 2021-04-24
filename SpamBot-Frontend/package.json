@@ -11,8 +11,10 @@
   },
   "dependencies": {
     "@quasar/extras": "^1.0.0",
+    "@websanova/vue-auth": "^4.1.1",
     "axios": "^0.18.1",
     "core-js": "^3.6.5",
+    "hellojs": "^1.19.3",
     "quasar": "^1.0.0"
   },
   "devDependencies": {

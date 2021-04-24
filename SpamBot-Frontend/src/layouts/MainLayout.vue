@@ -1,20 +1,13 @@
 <template>
   <q-layout view="hHh lpR fFf">
 
-    <q-header elevated class="bg-primary text-white q-pa-sm" height-hint="98">
+    <q-header elevated class="bg-primary text-white q-pa-sm bg-deep-purple-7" height-hint="98">
       <q-toolbar>
         <q-toolbar-title>
           SPAMBOT
         </q-toolbar-title>
-
-        <q-btn icon="mail" label="SEND SPAM" flat stack color="white" @click="sendSpam" />
       </q-toolbar>
 
-      <q-tabs align="left">
-        <q-route-tab to="/add" label="Add spam schedule" />
-        <q-route-tab to="/spam" label="Spam schedules" />
-        <q-route-tab to="/receivers" label="Spam receivers" />
-      </q-tabs>
     </q-header>
 
     <q-page-container>

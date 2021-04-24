@@ -2,30 +2,17 @@
 const routes = [
   {
     path: '/',
-    component: () => import('layouts/MainLayout.vue'),
-    children: [
-      { path: '', component: () => import('pages/Index.vue') }
-    ]
+    component: () => import('pages/RegisterLogin.vue')
   },
   {
-    path: '/add',
+    path: '/login',
+    component: () => import('pages/RegisterLogin.vue')
+  },
+  {
+    path: '/home',
     component: () => import('layouts/MainLayout.vue'),
     children: [
       { path: '', component: () => import('pages/AddSpam.vue') }
-    ]
-  },
-  {
-    path: '/spam',
-    component: () => import('layouts/MainLayout.vue'),
-    children: [
-      { path: '', component: () => import('pages/Spam.vue') }
-    ]
-  },
-  {
-    path: '/receivers',
-    component: () => import('layouts/MainLayout.vue'),
-    children: [
-      { path: '', component: () => import('pages/Receivers.vue') }
     ]
   },
 
