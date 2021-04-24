@@ -99,6 +99,8 @@ namespace SpamBot
             app.UseSwagger();
             app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "SpamBot v1"));
 
+            app.UseCors("AllowAnyCorsPolicy");
+
             app.UseHttpsRedirection();
 
             app.UseRouting();
@@ -121,8 +123,6 @@ namespace SpamBot
                 var response = new { error = exception.Message };
                 await context.Response.WriteAsJsonAsync(response);
             }));
-
-            app.UseCors("AllowAnyCorsPolicy");
 
             app.UseEndpoints(endpoints => endpoints.MapControllerRoute("default", "{controller=Home}/{action=Index}/{id?}"));
         }
