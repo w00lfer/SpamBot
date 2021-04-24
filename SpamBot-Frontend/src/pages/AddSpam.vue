@@ -117,6 +117,11 @@ export default {
             position: "top",
             message: "Email will be sent in a minute"
           });
+          this.form = {
+            email: "",
+            title: "",
+            description: "",
+          }
         })
         .catch(() => {
           this.$q.notify({
@@ -140,6 +145,10 @@ export default {
             position: "top",
             message: "Data sent"
           });
+          this.receiverForm = {
+            fullname: "",
+            email: ""
+          }
           this.loadEmails();
         })
         .catch(() => {
