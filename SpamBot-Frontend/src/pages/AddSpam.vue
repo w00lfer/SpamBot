@@ -58,6 +58,7 @@
 
 <script>
 import { api } from "boot/axios";
+import moment from 'moment';
 
 export default {
   name: "AddSpam",
@@ -66,7 +67,7 @@ export default {
       form: {
         email: "",
         title: "",
-        description: ""
+        description: "",
       },
       receiverForm: {
         fullname: "",
@@ -78,7 +79,10 @@ export default {
   methods: {
     loadEmails() {
       api
-        .get("/api/Receiver")
+        .get("/api/Receiver",{
+          headers: {
+            'Authorization': `bearer ${localStorage.getItem('jwt')}`
+          }})
         .then(response => {
           this.emails = response.data;
         })
@@ -92,19 +96,26 @@ export default {
         });
     },
     sendData() {
+      const bodyFormData = new FormData();
+      bodyFormData.append('ReceiverId', this.form.email.id)
+      bodyFormData.append('Title', this.form.title)
+      bodyFormData.append('Description', this.form.description)
+      bodyFormData.append('SendingDate', moment().add(2, 'h').add(1, 'm').format())
       api
-        .post({
-          url: "/api/Email",
-          data: this.form,
-          headers: {
-            "Content-Type": "multipart/form-data"
+        .post(
+          "/api/Email",
+          bodyFormData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+              'Authorization': `bearer ${localStorage.getItem('jwt')}`
           }
         })
         .then(response => {
           this.$q.notify({
             color: "positive",
             position: "top",
-            message: "Data sent"
+            message: "Email will be sent in a minute"
           });
         })
         .catch(() => {
@@ -118,7 +129,11 @@ export default {
     },
     addReceiver() {
       api
-        .post("/api/Receiver", this.receiverForm)
+        .post("/api/Receiver", this.receiverForm, {
+          headers: {
+            'Authorization': `bearer ${localStorage.getItem('jwt')}`
+          }
+        })
         .then(response => {
           this.$q.notify({
             color: "positive",

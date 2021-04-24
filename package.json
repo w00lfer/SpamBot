@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "@websanova/vue-auth": "^4.1.1",
+    "momentjs": "^2.0.0",
     "vue-auth": "^1.0.0-alpha.1"
   }
 }

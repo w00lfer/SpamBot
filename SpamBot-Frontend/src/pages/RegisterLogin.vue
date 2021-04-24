@@ -145,7 +145,7 @@ export default {
       e.preventDefault();
       if (this.password.length > 0) {
         api
-          .post("/api/Auth/Regiser", {
+          .post("/api/Auth/Register", {
             email: this.email,
             username: this.username,
             password: this.password
