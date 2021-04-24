@@ -79,6 +79,13 @@ namespace SpamBot
                 securityRequirement.Add(securitySchema, new[] { "Bearer" });
                 c.AddSecurityRequirement(securityRequirement);
             });
+
+            services.AddCors(o => o.AddPolicy("AllowAnyCorsPolicy", builder =>
+            {
+                builder.AllowAnyOrigin()
+                       .AllowAnyMethod()
+                       .AllowAnyHeader();
+            }));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -115,9 +122,7 @@ namespace SpamBot
                 await context.Response.WriteAsJsonAsync(response);
             }));
 
-            app.UseCors(builder =>
-               builder.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod()
-           );
+            app.UseCors("AllowAnyCorsPolicy");
 
             app.UseEndpoints(endpoints => endpoints.MapControllerRoute("default", "{controller=Home}/{action=Index}/{id?}"));
         }
