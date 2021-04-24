@@ -98,6 +98,13 @@ namespace SpamBot
 
             app.UseAuthentication();
             app.UseAuthorization();
+            app.Use(async (context, next) =>
+            {
+                context.Response.Headers.Add("Access-Control-Allow-Origin", "*");
+                context.Response.Headers.Add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH");
+                await next.Invoke();
+            });
+
 
             app.UseExceptionHandler(c => c.Run(async context =>
             {
@@ -107,6 +114,10 @@ namespace SpamBot
                 var response = new { error = exception.Message };
                 await context.Response.WriteAsJsonAsync(response);
             }));
+
+            app.UseCors(builder =>
+               builder.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod()
+           );
 
             app.UseEndpoints(endpoints => endpoints.MapControllerRoute("default", "{controller=Home}/{action=Index}/{id?}"));
         }
